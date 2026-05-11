@@ -29,6 +29,9 @@ const BRAND_LABEL = "Codex";
 const SEGMENT_SEPARATOR = "·";
 const FIVE_HOUR_LABEL = "5h:";
 const SEVEN_DAY_LABEL = "7d:";
+const USAGE_SPARKLINE_WIDTH = 10;
+const USAGE_SPARKLINE_FILLED = "▰";
+const USAGE_SPARKLINE_EMPTY = "▱";
 
 type MaybeModel = Model<Api> | undefined;
 export type PercentDisplayMode = "left" | "used";
@@ -174,6 +177,18 @@ function formatPercent(
 	return `${Math.round(clampPercent(displayPercent))}% ${mode}`;
 }
 
+function formatUsageSparkline(displayPercent: number | undefined): string | undefined {
+	if (typeof displayPercent !== "number" || Number.isNaN(displayPercent)) {
+		return undefined;
+	}
+
+	const filledCells = Math.round(
+		(clampPercent(displayPercent) / 100) * USAGE_SPARKLINE_WIDTH,
+	);
+	const emptyCells = USAGE_SPARKLINE_WIDTH - filledCells;
+	return `${USAGE_SPARKLINE_FILLED.repeat(filledCells)}${USAGE_SPARKLINE_EMPTY.repeat(emptyCells)}`;
+}
+
 function formatResetCountdown(resetAt: number | undefined): string | undefined {
 	if (typeof resetAt !== "number" || Number.isNaN(resetAt)) return undefined;
 	const totalSeconds = Math.max(0, Math.round((resetAt - Date.now()) / 1000));
@@ -204,13 +219,19 @@ function formatUsageSegment(
 	resetAt: number | undefined,
 	showReset: boolean,
 	preferences: FooterPreferences,
+	options?: { showSparkline?: boolean },
 ): string {
 	const displayPercent = usedToDisplayPercent(
 		usedPercent,
 		preferences.usageMode,
 	);
+	const sparkline = options?.showSparkline
+		? formatUsageSparkline(displayPercent)
+		: undefined;
 	const parts = [
-		`${label}${formatPercent(displayPercent, preferences.usageMode)}`,
+		sparkline
+			? `${label}${sparkline} ${formatPercent(displayPercent, preferences.usageMode)}`
+			: `${label}${formatPercent(displayPercent, preferences.usageMode)}`,
 	];
 	if (showReset) {
 		const countdown = formatResetCountdown(resetAt);
@@ -250,6 +271,7 @@ export function formatActiveAccountStatus(
 		usage.primary?.resetAt,
 		shouldShowReset(preferences, "5h"),
 		preferences,
+		{ showSparkline: true },
 	);
 	const sevenDay = formatUsageSegment(
 		ctx,

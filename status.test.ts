@@ -209,7 +209,7 @@ describe("createUsageStatusController", () => {
 		);
 		expect(setStatus).toHaveBeenCalledWith(
 			"multicodex-usage",
-			expect.stringContaining("5h:90% left"),
+			expect.stringContaining("5h:▰▰▰▰▰▰▰▰▰▱ 90% left"),
 		);
 		expect(setStatus).toHaveBeenCalledWith(
 			"multicodex-usage",
@@ -234,7 +234,7 @@ describe("createUsageStatusController", () => {
 
 		expect(setStatus).toHaveBeenCalledWith(
 			"multicodex-usage",
-			expect.stringContaining("5h:70% left"),
+			expect.stringContaining("5h:▰▰▰▰▰▰▰▱▱▱ 70% left"),
 		);
 		expect(setStatus).toHaveBeenCalledWith(
 			"multicodex-usage",
@@ -267,7 +267,7 @@ describe("createUsageStatusController", () => {
 
 		expect(setStatus).toHaveBeenCalledWith(
 			"multicodex-usage",
-			expect.stringContaining("5h:70% left"),
+			expect.stringContaining("5h:▰▰▰▰▰▰▰▱▱▱ 70% left"),
 		);
 		expect(refreshUsageForAccount).not.toHaveBeenCalled();
 
@@ -343,7 +343,7 @@ describe("createUsageStatusController", () => {
 		);
 		expect(setStatus).toHaveBeenLastCalledWith(
 			"multicodex-usage",
-			expect.stringContaining("5h:95% left"),
+			expect.stringContaining("5h:▰▰▰▰▰▰▰▰▰▰ 95% left"),
 		);
 	});
 });
