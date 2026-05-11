@@ -344,6 +344,13 @@ function applyPreferenceChange(
 	return preferences;
 }
 
+function isStaleExtensionContextError(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		error.message.includes("This extension ctx is stale after session replacement or reload")
+	);
+}
+
 export function createUsageStatusController(accountManager: AccountManager) {
 	let refreshTimer: ReturnType<typeof setInterval> | undefined;
 	let modelSelectTimer: ReturnType<typeof setTimeout> | undefined;
@@ -353,13 +360,28 @@ export function createUsageStatusController(accountManager: AccountManager) {
 	let preferences: FooterPreferences = DEFAULT_PREFERENCES;
 	let livePreviewPreferences: FooterPreferences | undefined;
 
+	function handleStaleContext(error: unknown): boolean {
+		if (!isStaleExtensionContextError(error)) return false;
+		activeContext = undefined;
+		queuedRefresh = false;
+		return true;
+	}
+
 	accountManager.onStateChange(() => {
 		if (!activeContext) return;
-		renderCachedStatus(activeContext, livePreviewPreferences ?? preferences);
+		try {
+			renderCachedStatus(activeContext, livePreviewPreferences ?? preferences);
+		} catch (error) {
+			if (!handleStaleContext(error)) throw error;
+		}
 	});
 
 	function clearStatus(ctx?: ExtensionContext): void {
-		ctx?.ui.setStatus(STATUS_KEY, undefined);
+		try {
+			ctx?.ui.setStatus(STATUS_KEY, undefined);
+		} catch (error) {
+			if (!handleStaleContext(error)) throw error;
+		}
 	}
 
 	async function ensurePreferencesLoaded(): Promise<void> {
@@ -445,6 +467,8 @@ export function createUsageStatusController(accountManager: AccountManager) {
 		refreshInFlight = true;
 		try {
 			await updateStatus(ctx);
+		} catch (error) {
+			if (!handleStaleContext(error)) throw error;
 		} finally {
 			refreshInFlight = false;
 			if (queuedRefresh && activeContext) {
@@ -496,10 +520,14 @@ export function createUsageStatusController(accountManager: AccountManager) {
 			await ensurePreferencesLoaded();
 		} catch (error) {
 			preferences = DEFAULT_PREFERENCES;
-			ctx?.ui.notify(
-				`Multicodex: failed to load ${SETTINGS_FILE}: ${String(error)}`,
-				"warning",
-			);
+			try {
+				ctx?.ui.notify(
+					`Multicodex: failed to load ${SETTINGS_FILE}: ${String(error)}`,
+					"warning",
+				);
+			} catch (notifyError) {
+				if (!handleStaleContext(notifyError)) throw notifyError;
+			}
 		}
 	}
 
