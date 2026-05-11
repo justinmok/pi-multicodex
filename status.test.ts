@@ -66,6 +66,7 @@ describe("formatActiveAccountStatus", () => {
 		expect(text).toContain("5h:▰▰▰▰▰▰▰▰▱▱ 75% left (↺");
 		expect(text).toContain("7d:40% left (↺");
 		expect(text).not.toContain("7d:▰");
+		expect(text).not.toContain("7d:▱");
 		expect(text).not.toContain("(5h:↺");
 		expect(text).not.toContain("(7d:↺");
 	});
@@ -92,6 +93,7 @@ describe("formatActiveAccountStatus", () => {
 		expect(text).toContain("5h:▰▱▱▱▱▱▱▱▱▱ 10% used");
 		expect(text).toContain("7d:20% used");
 		expect(text).not.toContain("7d:▰");
+		expect(text).not.toContain("7d:▱");
 		expect(text).not.toContain("a@example.com");
 		expect(text).not.toContain("↺");
 	});
@@ -161,9 +163,10 @@ describe("formatActiveAccountStatus", () => {
 		expect(loading).toContain("[muted:Codex]");
 		expect(loading).toContain("[muted:loading...]");
 		expect(unknown).toContain("[dim:5h:-- (↺");
-		expect(unknown).not.toContain("5h:▰");
-		expect(unknown).not.toContain("5h:▱");
+		expect(unknown).not.toMatch(/5h:[^·]*[▰▱]/);
+		expect(unknown).toContain("[muted:·]");
 		expect(unknown).toContain("[dim:7d:-- (↺");
+		expect(unknown).not.toMatch(/7d:[^\]]*[▰▱]/);
 	});
 });
 
