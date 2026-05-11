@@ -88,6 +88,22 @@ describe("formatActiveAccountStatus", () => {
 		expect(text).toContain("7d:80% left");
 	});
 
+	it("rounds .5 displayed percentages up before computing the 5h sparkline", () => {
+		const ctx = createContext();
+		const text = formatActiveAccountStatus(
+			ctx,
+			"a@example.com",
+			{
+				primary: { usedPercent: 14.5, resetAt: 1 },
+				secondary: { usedPercent: 20, resetAt: 2 },
+				fetchedAt: 0,
+			},
+			defaultPreferences,
+		);
+
+		expect(text).toContain("5h:▰▰▰▰▰▰▰▰▰▱ 86% left");
+	});
+
 	it("supports hiding the account and moving it after the usage fields", () => {
 		const ctx = createContext();
 		const text = formatActiveAccountStatus(
