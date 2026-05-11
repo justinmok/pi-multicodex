@@ -177,13 +177,16 @@ function formatPercent(
 	return `${Math.round(clampPercent(displayPercent))}% ${mode}`;
 }
 
-function formatUsageSparkline(displayPercent: number | undefined): string | undefined {
+function formatUsageSparkline(
+	displayPercent: number | undefined,
+): string | undefined {
 	if (typeof displayPercent !== "number" || Number.isNaN(displayPercent)) {
 		return undefined;
 	}
 
+	const roundedDisplayPercent = Math.round(clampPercent(displayPercent));
 	const filledCells = Math.round(
-		(clampPercent(displayPercent) / 100) * USAGE_SPARKLINE_WIDTH,
+		(roundedDisplayPercent / 100) * USAGE_SPARKLINE_WIDTH,
 	);
 	const emptyCells = USAGE_SPARKLINE_WIDTH - filledCells;
 	return `${USAGE_SPARKLINE_FILLED.repeat(filledCells)}${USAGE_SPARKLINE_EMPTY.repeat(emptyCells)}`;
@@ -369,7 +372,9 @@ function applyPreferenceChange(
 function isStaleExtensionContextError(error: unknown): boolean {
 	return (
 		error instanceof Error &&
-		error.message.includes("This extension ctx is stale after session replacement or reload")
+		error.message.includes(
+			"This extension ctx is stale after session replacement or reload",
+		)
 	);
 }
 
