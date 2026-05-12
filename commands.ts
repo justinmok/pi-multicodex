@@ -19,7 +19,7 @@ import { getAgentSettingsPath } from "pi-provider-utils/agent-paths";
 import { normalizeUnknownError } from "pi-provider-utils/streams";
 import type { AccountManager } from "./account-manager";
 import { openLoginInBrowser } from "./browser";
-import type { createUsageStatusController } from "./status";
+import type { createUsageStatusController, PercentDisplayMode } from "./status";
 import { type Account, STORAGE_FILE } from "./storage";
 import { formatResetAt, isUsageUntouched } from "./usage";
 
@@ -113,31 +113,40 @@ function getAccountTags(
 	].filter((value): value is string => Boolean(value));
 }
 
-function formatUsageSummary(
+function formatUsagePercent(
+	usedPercent: number | undefined,
+	usageMode: PercentDisplayMode,
+): string {
+	if (usedPercent === undefined) return "unknown";
+	const displayPercent = usageMode === "left" ? 100 - usedPercent : usedPercent;
+	return `${Math.round(Math.min(100, Math.max(0, displayPercent)))}% ${usageMode}`;
+}
+
+export function formatUsageSummary(
 	accountManager: AccountManager,
 	account: Account,
+	usageMode: PercentDisplayMode = "used",
 ): string {
 	const usage = accountManager.getCachedUsage(account.email);
 	const primaryUsed = usage?.primary?.usedPercent;
 	const secondaryUsed = usage?.secondary?.usedPercent;
 	const primaryReset = usage?.primary?.resetAt;
 	const secondaryReset = usage?.secondary?.resetAt;
-	const primaryLabel =
-		primaryUsed === undefined ? "unknown" : `${Math.round(primaryUsed)}%`;
-	const secondaryLabel =
-		secondaryUsed === undefined ? "unknown" : `${Math.round(secondaryUsed)}%`;
+	const primaryLabel = formatUsagePercent(primaryUsed, usageMode);
+	const secondaryLabel = formatUsagePercent(secondaryUsed, usageMode);
 	return `5h ${primaryLabel} reset:${formatResetAt(primaryReset)} | weekly ${secondaryLabel} reset:${formatResetAt(secondaryReset)}`;
 }
 
 function formatAccountStatusLine(
 	accountManager: AccountManager,
 	email: string,
+	usageMode: PercentDisplayMode = "used",
 ): string {
 	const account = accountManager.getAccount(email);
 	if (!account) return email;
 	const tags = getAccountTags(accountManager, account).join(", ");
 	const suffix = tags ? ` (${tags})` : "";
-	return `${account.email}${suffix} - ${formatUsageSummary(accountManager, account)}`;
+	return `${account.email}${suffix} - ${formatUsageSummary(accountManager, account, usageMode)}`;
 }
 
 function getSubcommandCompletions(prefix: string): AutocompleteItem[] | null {
@@ -344,6 +353,7 @@ async function promptForNewAccountIdentifier(
 async function openAccountManagementPanel(
 	ctx: ExtensionCommandContext,
 	accountManager: AccountManager,
+	usageMode: PercentDisplayMode,
 ): Promise<AccountPanelResult> {
 	const accounts = accountManager.getAccounts();
 
@@ -405,7 +415,7 @@ async function openAccountManagementPanel(
 					: "dim";
 			const secondary = theme.fg(
 				summaryColor,
-				formatUsageSummary(accountManager, account),
+				formatUsageSummary(accountManager, account, usageMode),
 			);
 			return [primary, truncateToWidth(`  ${secondary}`, width, "")];
 		}
@@ -595,7 +605,11 @@ async function openAccountManagementFlow(
 			continue;
 		}
 
-		const result = await openAccountManagementPanel(ctx, accountManager);
+		const result = await openAccountManagementPanel(
+			ctx,
+			accountManager,
+			statusController.getPreferences().usageMode,
+		);
 		if (!result) return;
 
 		if (result.action === "add") {
@@ -670,7 +684,11 @@ async function runAccountsSubcommand(
 
 	if (!ctx.hasUI) {
 		const lines = accounts.map((account) =>
-			formatAccountStatusLine(accountManager, account.email),
+			formatAccountStatusLine(
+				accountManager,
+				account.email,
+				statusController.getPreferences().usageMode,
+			),
 		);
 		ctx.ui.notify(lines.join("\n"), "info");
 		return;

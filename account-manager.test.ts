@@ -229,6 +229,57 @@ describe("AccountManager account deduplication", () => {
 	});
 });
 
+describe("AccountManager active account selection", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mocks.storageData.accounts = [];
+		mocks.storageData.activeEmail = undefined;
+		mocks.loadImportedOpenAICodexAuth.mockResolvedValue(undefined);
+	});
+
+	it("persists selected managed account as active while keeping manual override", () => {
+		mocks.storageData.accounts = [
+			{
+				email: "one@example.com",
+				accessToken: "one-access",
+				refreshToken: "one-refresh",
+				expiresAt: Date.now() + 3600_000,
+			},
+			{
+				email: "two@example.com",
+				accessToken: "two-access",
+				refreshToken: "two-refresh",
+				expiresAt: Date.now() + 3600_000,
+			},
+		];
+
+		const manager = new AccountManager();
+		manager.setManualAccount("two@example.com");
+
+		expect(manager.getManualAccount()?.email).toBe("two@example.com");
+		expect(manager.getActiveAccount()?.email).toBe("two@example.com");
+		expect(mocks.saveStorage).toHaveBeenCalledWith(
+			expect.objectContaining({ activeEmail: "two@example.com" }),
+		);
+	});
+
+	it("falls back to the first managed account when persisted active email is missing", () => {
+		mocks.storageData.activeEmail = "missing@example.com";
+		mocks.storageData.accounts = [
+			{
+				email: "one@example.com",
+				accessToken: "one-access",
+				refreshToken: "one-refresh",
+				expiresAt: Date.now() + 3600_000,
+			},
+		];
+
+		const manager = new AccountManager();
+
+		expect(manager.getActiveAccount()?.email).toBe("one@example.com");
+	});
+});
+
 describe("AccountManager auth-failure warnings", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

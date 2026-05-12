@@ -186,7 +186,7 @@ export class AccountManager {
 		const manual = this.getManualAccount();
 		if (manual) return manual;
 		if (this.data.activeEmail) {
-			return this.getAccount(this.data.activeEmail);
+			return this.getAccount(this.data.activeEmail) ?? this.data.accounts[0];
 		}
 		return this.data.accounts[0];
 	}
@@ -215,6 +215,8 @@ export class AccountManager {
 		const account = this.getAccount(email);
 		if (!account) return;
 		this.manualEmail = email;
+		this.data.activeEmail = email;
+		this.save();
 		account.lastUsed = Date.now();
 		this.notifyStateChanged();
 	}

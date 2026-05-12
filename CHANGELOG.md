@@ -1,3 +1,11 @@
+## Unreleased
+
+### Bug Fixes
+
+* align account-management usage summaries with the configured footer usage mode
+* persist selected accounts as active while preserving manual override behavior
+* fall back from stale persisted active accounts to the first managed account
+
 ## [2.3.1](https://github.com/victor-software-house/pi-multicodex/compare/v2.3.0...v2.3.1) (2026-03-30)
 
 

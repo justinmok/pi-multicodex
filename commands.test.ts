@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AccountManager } from "./account-manager";
-import { registerCommands } from "./commands";
+import { formatUsageSummary, registerCommands } from "./commands";
 import type { createUsageStatusController } from "./status";
 
 function createStatusControllerMock() {
@@ -23,6 +23,39 @@ function createAccountManagerMock(emails: string[] = []) {
 		getAccounts: () => emails.map((email) => ({ email })),
 	} as unknown as AccountManager;
 }
+
+describe("formatUsageSummary", () => {
+	function createUsageManager(usedPercent: number) {
+		return {
+			getCachedUsage: () => ({
+				primary: { usedPercent, resetAt: Date.now() + 60_000 },
+				secondary: { usedPercent, resetAt: Date.now() + 3600_000 },
+			}),
+		} as unknown as AccountManager;
+	}
+
+	it("formats usage as quota left when footer mode is left", () => {
+		const summary = formatUsageSummary(
+			createUsageManager(1),
+			{ email: "two@example.com" } as never,
+			"left",
+		);
+
+		expect(summary).toContain("5h 99% left");
+		expect(summary).toContain("weekly 99% left");
+	});
+
+	it("formats usage as consumed quota when footer mode is used", () => {
+		const summary = formatUsageSummary(
+			createUsageManager(1),
+			{ email: "two@example.com" } as never,
+			"used",
+		);
+
+		expect(summary).toContain("5h 1% used");
+		expect(summary).toContain("weekly 1% used");
+	});
+});
 
 describe("registerCommands", () => {
 	it("registers only the multicodex command", () => {
